@@ -168,51 +168,58 @@ namespace IntelliSoft.MustBeFollowedBy.Blazor.Server.Controllers.Attributes
         {
             StringBuilder locJScript = new StringBuilder();
 
-            // Using a timeout, to make sure, that all components are loaded
-            // And the css class is applied to the correct component
-
-            locJScript.AppendLine("setTimeout(() => {");
-            locJScript.AppendLine("    function searchElementsByCssClassPrefix(prefix) {");
-            locJScript.AppendLine("        var locAllElements = document.querySelectorAll('*');");
-            locJScript.AppendLine("        var locMatchingElements = [];");
-            locJScript.AppendLine("        locAllElements.forEach(function(element) {");
-            locJScript.AppendLine("            if (typeof element.className === 'string') {");
-            locJScript.AppendLine("                var locClasses = element.className.split(' ');");
-            locJScript.AppendLine("                locClasses.forEach(function(className) {");
-            locJScript.AppendLine("                    if (className.startsWith(prefix)) {");
-            locJScript.AppendLine("                        locMatchingElements.push(element);");
-            locJScript.AppendLine("                        return; // No need to check other classes for this element");
-            locJScript.AppendLine("                    }");
-            locJScript.AppendLine("                });");
-            locJScript.AppendLine("            }");
-            locJScript.AppendLine("        });");
-            locJScript.AppendLine("        return locMatchingElements;");
-            locJScript.AppendLine("    }");
-            locJScript.AppendLine("    function extractValueFromPrefix(element, prefix) {");
-            locJScript.AppendLine("        var locClasses = element.className.split(' ');");
-            locJScript.AppendLine("        for (var i = 0; i < locClasses.length; i++) {");
-            locJScript.AppendLine("            if (locClasses[i].startsWith(prefix)) {");
-            locJScript.AppendLine("                return locClasses[i].substring(prefix.length);");
-            locJScript.AppendLine("            }");
+            locJScript.AppendLine("function searchElementsByCssClassPrefix(prefix) {");
+            locJScript.AppendLine("  var locAllElements = document.querySelectorAll('*');");
+            locJScript.AppendLine("  var locMatchingElements = [];");
+            locJScript.AppendLine("  locAllElements.forEach(function(element) {");
+            locJScript.AppendLine("    if (typeof element.className === 'string') {");
+            locJScript.AppendLine("      var locClasses = element.className.split(' ');");
+            locJScript.AppendLine("      locClasses.forEach(function(className) {");
+            locJScript.AppendLine("        if (className.startsWith(prefix)) {");
+            locJScript.AppendLine("          locMatchingElements.push(element);");
+            locJScript.AppendLine("          return; // No need to check other classes for this element");
             locJScript.AppendLine("        }");
-            locJScript.AppendLine("        return null;");
+            locJScript.AppendLine("      });");
             locJScript.AppendLine("    }");
-            locJScript.AppendLine(
-                "    var locElementsWithPrefix = searchElementsByCssClassPrefix('MustBeFollowedById:');");
-            locJScript.AppendLine("    locElementsWithPrefix.forEach(function(element) {");
-            locJScript.AppendLine("        var locValue = extractValueFromPrefix(element, 'MustBeFollowedById:');");
-            locJScript.AppendLine("        if (locValue != null) {");
-            locJScript.AppendLine(
-                "            var locElementToFollowUp = searchElementsByCssClassPrefix('FollowUpId:' + locValue);");
+            locJScript.AppendLine("  });");
+            locJScript.AppendLine("  return locMatchingElements;");
+            locJScript.AppendLine("}");
+
+            locJScript.AppendLine("function extractValueFromPrefix(element, prefix) {");
+            locJScript.AppendLine("  var locClasses = element.className.split(' ');");
+            locJScript.AppendLine("  for (var i = 0; i < locClasses.length; i++) {");
+            locJScript.AppendLine("    if (locClasses[i].startsWith(prefix)) {");
+            locJScript.AppendLine("      return locClasses[i].substring(prefix.length);");
+            locJScript.AppendLine("    }");
+            locJScript.AppendLine("  }");
+            locJScript.AppendLine("  return null;");
+            locJScript.AppendLine("}");
+
+            locJScript.AppendLine("function observeAndFocus() {");
+            locJScript.AppendLine("  const observer = new MutationObserver(function (mutations) {");
+            locJScript.AppendLine("    mutations.forEach(function (mutation) {");
+            locJScript.AppendLine("      if (mutation.addedNodes.length > 0) {");
+            locJScript.AppendLine("        var locElementsWithPrefix = searchElementsByCssClassPrefix('MustBeFollowedById:');");
+            locJScript.AppendLine("        locElementsWithPrefix.forEach(function(element) {");
+            locJScript.AppendLine("          var locValue = extractValueFromPrefix(element, 'MustBeFollowedById:');");
+            locJScript.AppendLine("          if (locValue != null) {");
+            locJScript.AppendLine("            var locElementToFollowUp = searchElementsByCssClassPrefix('FollowUpId:' + locValue);");
             locJScript.AppendLine("            if (locElementToFollowUp.length > 0) {");
-            locJScript.AppendLine("                element.addEventListener('focusout', (event) => {");
-            locJScript.AppendLine("                    locElementToFollowUp[0].focus();");
-            locJScript.AppendLine("                });");
+            locJScript.AppendLine("              element.addEventListener('focusout', (event) => {");
+            locJScript.AppendLine("                locElementToFollowUp[0].focus();");
+            locJScript.AppendLine("                locElementToFollowUp[0].select();");
+            locJScript.AppendLine("              });");
             locJScript.AppendLine("            }");
-            locJScript.AppendLine("        }");
+            locJScript.AppendLine("          }");
+            locJScript.AppendLine("        });");
+            locJScript.AppendLine("      }");
             locJScript.AppendLine("    });");
-            locJScript.AppendLine("}, 500);"); // 500ms timeout, to make sure, that all components are loaded
+            locJScript.AppendLine("  });");
+            locJScript.AppendLine("  const config = { childList: true, subtree: true };");
+            locJScript.AppendLine("  observer.observe(document.body, config);");
+            locJScript.AppendLine("}");
 
+            locJScript.AppendLine("observeAndFocus();");
 
             Task.Factory
                 .StartNew(
